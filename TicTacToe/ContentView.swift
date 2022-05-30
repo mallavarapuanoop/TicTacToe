@@ -12,11 +12,11 @@ struct ContentView: View {
     let columns: [GridItem] = [GridItem(.flexible()), GridItem(.flexible()), GridItem(.flexible())]
     
     @State var moves: [Move?] = Array(repeating: nil, count: 9)
+    @State var isBoardDisabled: Bool = false
     
     var body: some View {
         GeometryReader { geometry in
             VStack {
-                
                 Text("Tic Tac Toe")
                     .font(.largeTitle).foregroundColor(.red)
                     .padding(10)
@@ -34,6 +34,8 @@ struct ContentView: View {
                 LazyVGrid(columns: columns, spacing: 5) {
                     ForEach(0..<9) { i in
                         ZStack {
+                            Text("\(i)")
+                            
                             Circle()
                                 .frame(width: geometry.size.width/3 - 15, height: geometry.size.width/3 - 15)
                                 .foregroundColor(.red).opacity(0.5)
@@ -49,22 +51,45 @@ struct ContentView: View {
                             //Player move
                             if isSquareOccupied(in: moves, for: i) { return }
                             moves[i] = Move(player: .human, boardIndex: i)
+                            isBoardDisabled = true
                             
+                            if isWinConditionMet(for: .human, for: moves) {
+                                print("Player Won")
+                                return
+                            }
+                            
+                            if checkForDrawCondition(in: moves) {
+                                print("Its a Draw, Try again")
+                                return
+                            }
                             
                             //computer Move
                             
                             DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
                                 let computerPosition = determineComputerPosition(in: moves)
                                 moves[computerPosition] = Move(player: .computer, boardIndex: computerPosition)
+                                
+                                if isWinConditionMet(for: .computer, for: moves) {
+                                    print("Computer Won")
+                                    return
+                                }
+                                
+                                if checkForDrawCondition(in: moves) {
+                                    print("Its a Draw, Try again")
+                                    return
+                                }
+                                
+                                isBoardDisabled = false
                             }
-                            
                         }
                     }
                 }
                 
                 Spacer()
                 
-            }.padding(5)
+            }
+            .disabled(isBoardDisabled)
+            .padding(5)
         }
     }
     
@@ -83,11 +108,24 @@ struct ContentView: View {
         return movePosition
     }
     
-    func isWinConditionMet(for moves: [Move?]) -> Bool {
-        let winProbabilities = [[0,1,2], [1,2,3], [2,3,4], [3,4,5], [4,5,6], [5,6,7], [6,7,8], [0,4,8], [2,4,6]]
+    func isWinConditionMet(for player: Player, for moves: [Move?]) -> Bool {
         
+        let winPatterns: Set<Set<Int>> = [[0,1,2], [3,4,5], [6,7,8], [0,3,6], [1,4,7], [2,5,8], [0,4,8], [2,4,6]]
         
-        return true
+        let playerMoves = moves.compactMap { $0 }.filter { $0.player == player }
+        let playerPositions = Set(playerMoves.map { $0.boardIndex })
+        
+        for pattern in winPatterns where pattern.isSubset(of: playerPositions) {
+            return true
+        }
+        
+        print(playerPositions)
+        
+        return false
+    }
+    
+    func checkForDrawCondition(in moves: [Move?]) -> Bool {
+        moves.compactMap { $0 }.count == 9
     }
 }
 
