@@ -14,6 +14,8 @@ struct ContentView: View {
     @State var moves: [Move?] = Array(repeating: nil, count: 9)
     @State var isBoardDisabled: Bool = false
     
+    var gameType: GameType?
+    
     var body: some View {
         GeometryReader { geometry in
             VStack {
@@ -34,8 +36,6 @@ struct ContentView: View {
                 LazyVGrid(columns: columns, spacing: 5) {
                     ForEach(0..<9) { i in
                         ZStack {
-                            Text("\(i)")
-                            
                             Circle()
                                 .frame(width: geometry.size.width/3 - 15, height: geometry.size.width/3 - 15)
                                 .foregroundColor(.red).opacity(0.5)
@@ -91,9 +91,7 @@ struct ContentView: View {
                 Button("Reset") {
                     resetGame()
                 }
-                
                 Spacer()
-                
             }
             .padding(5)
         }
@@ -148,17 +146,20 @@ enum Player: String {
 struct Move {
     let player: Player
     let boardIndex: Int
+    let gameType: GameType? = nil
     
     
     var indicator: String {
         player == .human ? "xmark" : "circle"
     }
     
-    //TODO: Set up multi player
-    
-//    var isMultiPlayer: Bool {
-//        return true
-//    }
+    var isMultiPlayer: Bool {
+        guard let gameType = gameType else {
+            return false
+        }
+
+        return gameType == .multiPlayer
+    }
 }
 
 
@@ -168,3 +169,11 @@ struct ContentView_Previews: PreviewProvider {
     }
 }
 
+
+public enum GameType: String {
+    case singlePlayer, multiPlayer
+}
+
+
+//player 1 chances: 0 2 4 6 8
+//player 2 chances: 1 3 5 7
