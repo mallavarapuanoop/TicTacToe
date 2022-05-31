@@ -84,11 +84,17 @@ struct ContentView: View {
                         }
                     }
                 }
+                .disabled(isBoardDisabled)
+                
+                Spacer()
+                
+                Button("Reset") {
+                    resetGame()
+                }
                 
                 Spacer()
                 
             }
-            .disabled(isBoardDisabled)
             .padding(5)
         }
     }
@@ -115,11 +121,11 @@ struct ContentView: View {
         let playerMoves = moves.compactMap { $0 }.filter { $0.player == player }
         let playerPositions = Set(playerMoves.map { $0.boardIndex })
         
+        print("\(player.rawValue): \(playerPositions)")
+        
         for pattern in winPatterns where pattern.isSubset(of: playerPositions) {
             return true
         }
-        
-        print(playerPositions)
         
         return false
     }
@@ -127,10 +133,15 @@ struct ContentView: View {
     func checkForDrawCondition(in moves: [Move?]) -> Bool {
         moves.compactMap { $0 }.count == 9
     }
+    
+    func resetGame() {
+        moves = Array(repeating: nil, count: 9)
+        isBoardDisabled = false
+    }
 }
 
 
-enum Player {
+enum Player: String {
     case human, computer
 }
 
@@ -142,6 +153,12 @@ struct Move {
     var indicator: String {
         player == .human ? "xmark" : "circle"
     }
+    
+    //TODO: Set up multi player
+    
+//    var isMultiPlayer: Bool {
+//        return true
+//    }
 }
 
 
