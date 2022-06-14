@@ -11,8 +11,9 @@ struct ContentView: View {
     
     let columns: [GridItem] = [GridItem(.flexible()), GridItem(.flexible()), GridItem(.flexible())]
     
-    @State var moves: [Move?] = Array(repeating: nil, count: 9)
-    @State var isBoardDisabled: Bool = false
+    @State private var moves: [Move?] = Array(repeating: nil, count: 9)
+    @State private var isBoardDisabled: Bool = false
+    @State private var alertItem: AlertItem?
     
     var gameType: GameType?
     
@@ -54,12 +55,12 @@ struct ContentView: View {
                             isBoardDisabled = true
                             
                             if isWinConditionMet(for: .human, for: moves) {
-                                print("Player Won")
+                                alertItem = AlertContext.playerWin
                                 return
                             }
                             
                             if checkForDrawCondition(in: moves) {
-                                print("Its a Draw, Try again")
+                                alertItem = AlertContext.draw
                                 return
                             }
                             
@@ -70,12 +71,12 @@ struct ContentView: View {
                                 moves[computerPosition] = Move(player: .computer, boardIndex: computerPosition)
                                 
                                 if isWinConditionMet(for: .computer, for: moves) {
-                                    print("Computer Won")
+                                    alertItem = AlertContext.computerWin
                                     return
                                 }
                                 
                                 if checkForDrawCondition(in: moves) {
-                                    print("Its a Draw, Try again")
+                                    alertItem = AlertContext.draw
                                     return
                                 }
                                 
@@ -94,6 +95,11 @@ struct ContentView: View {
                 Spacer()
             }
             .padding(5)
+            .alert(item: $alertItem, content: { alertItem in
+                Alert(title: alertItem.title, message: alertItem.message, dismissButton: .default(alertItem.buttonText, action: {
+                    resetGame()
+                }))
+            })
         }
     }
     
@@ -102,7 +108,49 @@ struct ContentView: View {
         moves.contains(where: { $0?.boardIndex == index })
     }
     
+    //If AI can win, then win
+    //If AI cant win, then block
+    //If AI cant block, then take middle square
+    //If AI cant take middle square, take random available square
+    
     func determineComputerPosition(in moves: [Move?]) -> Int {
+        //If AI can win, then win
+        let winPatterns: Set<Set<Int>> = [[0,1,2], [3,4,5], [6,7,8], [0,3,6], [1,4,7], [2,5,8], [0,4,8], [2,4,6]]
+        
+        let computerMoves = moves.compactMap { $0 }.filter { $0.player == .computer }
+        let computerPositions = Set(computerMoves.map { $0.boardIndex })
+        
+        for pattern in winPatterns {
+            let winPositions = pattern.subtracting(computerPositions)
+            
+            if winPositions.count == 1 {
+                let isAvailable = !isSquareOccupied(in: moves, for: winPositions.first!)
+                if isAvailable { return winPositions.first!}
+            }
+        }
+        
+        //If AI cant win, then block
+        let humanMoves = moves.compactMap { $0 }.filter { $0.player == .human }
+        let humanPositions = Set(humanMoves.map { $0.boardIndex })
+        
+        for pattern in winPatterns {
+            let winPositions = pattern.subtracting(humanPositions)
+            
+            if winPositions.count == 1 {
+                let isAvailable = !isSquareOccupied(in: moves, for: winPositions.first!)
+                if isAvailable { return winPositions.first!}
+            }
+        }
+        
+        //If AI cant block, then take middle square
+        
+        let centerSquare = 4
+        if !isSquareOccupied(in: moves, for: centerSquare) {
+            return centerSquare
+        }
+        
+        //If AI cant take middle square, take random available square
+        
         var movePosition = Int.random(in: 0..<9)
         
         while isSquareOccupied(in: moves, for: movePosition) {
@@ -118,8 +166,6 @@ struct ContentView: View {
         
         let playerMoves = moves.compactMap { $0 }.filter { $0.player == player }
         let playerPositions = Set(playerMoves.map { $0.boardIndex })
-        
-        print("\(player.rawValue): \(playerPositions)")
         
         for pattern in winPatterns where pattern.isSubset(of: playerPositions) {
             return true
