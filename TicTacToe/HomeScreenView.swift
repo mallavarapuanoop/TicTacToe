@@ -20,13 +20,13 @@ struct HomeScreenView: View {
                 
                 HStack {
                     Spacer()
-                    NavigationLink(destination: ContentView(gameType: .singlePlayer)) {
+                    NavigationLink(destination: GameView()) {
                         Text("Single Player")
                     }
                     
                     Spacer()
                     
-                    NavigationLink(destination: ContentView(gameType: .multiPlayer)) {
+                    NavigationLink(destination: GameView()) {
                         Text("Multi Players")
                     }
                     Spacer()
